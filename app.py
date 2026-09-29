@@ -16,7 +16,7 @@ current_ask = st.sidebar.number_input(
     "目前即時賣價 (即買價)", value=402.00, step=1.0
 )
 
-# 讀取 CSV 或使用預設 50 筆數據
+# 讀取 CSV 或使用預設數據
 if uploaded_file is not None:
     try:
         df_raw = pd.read_csv(
@@ -39,7 +39,7 @@ if uploaded_file is not None:
         st.sidebar.error(f"❌ 讀取失敗：{e}")
         prices = np.array([])
 else:
-    st.sidebar.info("💡 未上傳 CSV，使用預設 50 筆數據")
+    st.sidebar.info("💡 未上傳 CSV，使用預設數據")
     prices = np.array(
         [
             542, 472, 552, 446, 451, 467, 523, 447, 446, 384,
@@ -93,31 +93,27 @@ if len(prices) > 0:
                 unsafe_allow_html=True,
             )
 
-        st.write("")  # 間距調整
+        st.write("")
 
-        # 2. 直方圖區塊（放至左側底部）
+        # 2. 直方圖區塊
         st.subheader("📈 近期成交價格直方圖")
 
         fig = go.Figure()
 
-        if len(prices) == 50 and min_price == 337 and max_price == 685:
-            bin_size = 49.8
-            start_val = 336.7
-        else:
-            bin_size = (
-                (max_price - min_price) / 7 if max_price > min_price else 10
-            )
-            start_val = min_price
+        # 固定組寬為 25 美元，起點從 325 或 350 開始對齊整數區間
+        bin_size = 25
+        start_val = 325
 
-        # 70% 主要買價區間背景
+        # 70% 主要買價區間背景 (黃色半透明)
         fig.add_vrect(
             x0=p15,
             x1=p85,
-            fillcolor="rgba(240, 230, 140, 0.35)",  # 附件圖片中的黃色透明背景區塊
+            fillcolor="rgba(240, 230, 140, 0.35)",
             layer="below",
             line_width=0,
         )
 
+        # 直方圖設定 (組寬固定 25)
         fig.add_trace(
             go.Histogram(
                 x=prices,
@@ -130,9 +126,9 @@ if len(prices) > 0:
             )
         )
 
-        # KDE 趨勢線
+        # KDE 趨勢擬合線
         kde = stats.gaussian_kde(prices, bw_method=0.33)
-        x_grid = np.linspace(min_price - 20, max_price + 20, 300)
+        x_grid = np.linspace(325, 625, 300)
         y_kde = kde(x_grid) * len(prices) * bin_size
 
         fig.add_trace(
@@ -145,7 +141,7 @@ if len(prices) > 0:
             )
         )
 
-        # 垂直標註線
+        # 垂直標註線 (現買價、理想買價、平均價、溢買價)
         fig.add_vline(
             x=current_ask,
             line_dash="solid",
@@ -199,10 +195,19 @@ if len(prices) > 0:
             font=dict(size=11, color="#333333"),
         )
 
+        # X軸以50為刻度，Y軸以2為刻度 (與目標圖一致)
         fig.update_layout(
             title_text="",
-            xaxis_title="成交金額 (USD) ➔ 越往右代表買得越貴",
-            yaxis_title="頻率 (成交筆數)",
+            xaxis=dict(
+                title="成交金額 (USD) ➔ 越往右代表買得越貴",
+                dtick=50,
+                tick0=350,
+            ),
+            yaxis=dict(
+                title="頻率 (成交筆數)",
+                tick0=0,
+                dtick=2,
+            ),
             height=430,
             margin=dict(l=20, r=20, t=60, b=20),
             showlegend=True,
@@ -213,7 +218,6 @@ if len(prices) > 0:
 
     # ==================== 右側欄位 ====================
     with col_right:
-        # 1. 四大價格明細表區塊（放至右側頂部）
         st.subheader("🎯 目前四大價格明細表")
 
         tag_df = pd.DataFrame(
@@ -243,7 +247,7 @@ if len(prices) > 0:
         st.write("")
         st.write("")
 
-        # 2. 買家出價策略建議（放至右側表格下方）
+        # 買家出價策略建議
         if current_ask <= ideal_bid:
             strategy_status = "🔥 極限推薦秒殺"
             strategy_color = "#27ae60"
