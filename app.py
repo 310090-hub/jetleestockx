@@ -1,36 +1,15 @@
-import os
-import urllib.request
-import platform
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import matplotlib.font_manager as fm
 from scipy.stats import gaussian_kde
 
-# --- 自動下載並設定雲端中文字型 (思源黑體) ---
-font_filename = "NotoSansTC-Regular.otf"
-if not os.path.exists(font_filename):
-    try:
-        font_url = "https://github.com/google/fonts/raw/main/ofl/notosanstc/NotoSansTC-Regular.otf"
-        urllib.request.urlretrieve(font_url, font_filename)
-    except Exception:
-        pass
-
-if os.path.exists(font_filename):
-    fm.fontManager.addfont(font_filename)
-    mpl.rc('font', family='Noto Sans TC')
-else:
-    system = platform.system()
-    if system == 'Windows':
-        mpl.rc('font', family='Microsoft JhengHei')
-    elif system == 'Darwin':
-        mpl.rc('font', family='PingFang HK')
-
+# --- 中文字型設定 (支援 Windows、Mac 與 Streamlit Cloud Linux) ---
+mpl.rcParams['font.sans-serif'] = ['Noto Sans CJK TC', 'Microsoft JhengHei', 'PingFang HK', 'sans-serif']
 mpl.rcParams['axes.unicode_minus'] = False
 
-# --- 網頁配置 ---
+# --- 網頁設定 ---
 st.set_page_config(page_title="球鞋買價分析", layout="wide")
 st.markdown("""
     <style>
@@ -41,7 +20,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ================= 側邊欄 =================
+# ================= 側邊欄 (Sidebar) =================
 with st.sidebar:
     st.markdown("### ⚙️ 數據與模型設定")
     uploaded_file = st.file_uploader("上傳成交歷史 CSV", type=['csv'])
@@ -79,12 +58,12 @@ try:
     max_price = np.max(prices)
     p15, p25, p50, p75, p85 = np.percentile(prices, [15, 25, 50, 75, 85])
 
-    # ================= 主畫面 =================
+    # ================= 主畫面排版 =================
     st.markdown("## 👟 球鞋買價分析")
     
     col_left, col_right = st.columns([5, 5], gap="large")
     
-    # ----------------- 左側 -----------------
+    # ----------------- 左側：統計指標與直方圖 -----------------
     with col_left:
         st.markdown("### 📊 近期成交統計指標")
         
@@ -140,7 +119,7 @@ try:
         plt.tight_layout()
         st.pyplot(fig)
         
-    # ----------------- 右側 -----------------
+    # ----------------- 右側：明細表與決策引擎 -----------------
     with col_right:
         st.markdown("### 🎯 目前四大價格明細表")
         df_table = pd.DataFrame({
